@@ -27,6 +27,7 @@ import util.misc as misc
 from util.datasets import build_dataset
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
+from util.loss import WeightedLabelSmoothingCrossEntropy
 
 import models_vit
 
@@ -101,6 +102,10 @@ def get_args_parser():
                         help='Probability of switching to cutmix when both mixup and cutmix enabled')
     parser.add_argument('--mixup_mode', type=str, default='batch',
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
+    
+    # ** Class weights (custom)
+    parser.add_argument('--class_weights', type=lambda s: [float(item.strip()) for item in s.removeprefix("[").removesuffix("]").split(',')], default=None,
+                        help="delimited list of class weights for imbalanced dataset. position is index.")
 
     # * Finetuning params
     parser.add_argument('--finetune', default='',type=str,
@@ -306,9 +311,10 @@ def main(args):
         # smoothing is handled with mixup label transform
         criterion = SoftTargetCrossEntropy()
     elif args.smoothing > 0.:
-        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+        # criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+        criterion = WeightedLabelSmoothingCrossEntropy(smoothing=args.smoothing, weights=args.class_weights)
     else:
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss(weight=args.weights)
 
     print("criterion = %s" % str(criterion))
 
