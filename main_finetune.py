@@ -312,7 +312,7 @@ def main(args):
         criterion = SoftTargetCrossEntropy()
     elif args.smoothing > 0.:
         # criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-        criterion = WeightedLabelSmoothingCrossEntropy(smoothing=args.smoothing, weights=args.class_weights)
+        criterion = WeightedLabelSmoothingCrossEntropy(smoothing=args.smoothing, weight=args.class_weights)
     else:
         criterion = torch.nn.CrossEntropyLoss(weight=args.weights)
 
