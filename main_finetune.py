@@ -104,7 +104,7 @@ def get_args_parser():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
     
     # ** Class weights (custom)
-    parser.add_argument('--class_weights', type=lambda s: [float(item.strip()) for item in s.removeprefix("[").removesuffix("]").split(',')], default=None,
+    parser.add_argument('--class_weights', type=lambda s: [float(item.strip()) for item in s.split(',')], default=None,
                         help="delimited list of class weights for imbalanced dataset. position is index.")
 
     # * Finetuning params
@@ -306,15 +306,19 @@ def main(args):
     )
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
     loss_scaler = NativeScaler()
+    
+    class_weights = args.class_weights
+    if class_weights is not None:
+        class_weights = torch.tensor(class_weights).to(device)
 
     if mixup_fn is not None:
         # smoothing is handled with mixup label transform
         criterion = SoftTargetCrossEntropy()
     elif args.smoothing > 0.:
         # criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-        criterion = WeightedLabelSmoothingCrossEntropy(smoothing=args.smoothing, weight=args.class_weights)
+        criterion = WeightedLabelSmoothingCrossEntropy(smoothing=args.smoothing, weight=class_weights)
     else:
-        criterion = torch.nn.CrossEntropyLoss(weight=args.weights)
+        criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
 
     print("criterion = %s" % str(criterion))
 
